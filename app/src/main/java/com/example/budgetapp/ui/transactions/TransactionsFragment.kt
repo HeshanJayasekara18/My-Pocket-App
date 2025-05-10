@@ -6,27 +6,21 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
+import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.budgetapp.MainActivity
 import com.example.budgetapp.R
 import com.example.budgetapp.data.AppDatabase
 import com.example.budgetapp.data.entity.Transaction
 import com.example.budgetapp.data.entity.TransactionType
-import com.example.budgetapp.data.model.TransactionCategory
-import com.example.budgetapp.data.model.TransactionCategories
 import com.example.budgetapp.data.model.TransactionFilter
 import com.example.budgetapp.data.repository.TransactionRepository
 import com.example.budgetapp.databinding.FragmentTransactionsBinding
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -36,7 +30,6 @@ class TransactionsFragment : Fragment() {
     private lateinit var viewModel: TransactionsViewModel
     private lateinit var transactionsAdapter: TransactionsAdapter
     private var selectedDate: Long = System.currentTimeMillis()
-    private var selectedCategory: TransactionCategory? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -90,10 +83,10 @@ class TransactionsFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        viewModel.filteredTransactions.observe(viewLifecycleOwner, Observer { transactions ->
+        viewModel.filteredTransactions.observe(viewLifecycleOwner) { transactions ->
             transactionsAdapter.submitList(transactions)
             updateEmptyState(transactions.isEmpty())
-        })
+        }
     }
 
     private fun setupFab() {
@@ -105,11 +98,6 @@ class TransactionsFragment : Fragment() {
     private fun loadTransactions() {
         val userId = (requireActivity() as MainActivity).getCurrentUserId()
         viewModel.loadTransactions(userId)
-    }
-
-    private fun updateEmptyState(isEmpty: Boolean) {
-        binding.emptyStateLayout.visibility = if (isEmpty) View.VISIBLE else View.GONE
-        binding.transactionsRecyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
     }
 
     private fun showAddTransactionDialog() {
@@ -127,32 +115,12 @@ class TransactionsFragment : Fragment() {
         // Set default date
         selectedDate = System.currentTimeMillis()
         etDate.setText(SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(selectedDate)))
-        
-        // Helper to update spinner items
-        fun updateCategorySpinner(type: TransactionType) {
-            val categories = TransactionCategories.getCategoriesByType(type)
-            val adapter = android.widget.ArrayAdapter(
-                requireContext(),
-                android.R.layout.simple_spinner_item,
-                categories.map { it.name }
-            )
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            spinnerCategory.adapter = adapter
-        }
 
-        // Set default transaction type and categories
-        chipGroup.check(R.id.chipIncome)
-        updateCategorySpinner(TransactionType.INCOME)
-
-        // Handle transaction type change
-        chipGroup.setOnCheckedChangeListener { _, checkedId ->
-            val type = when (checkedId) {
-                R.id.chipIncome -> TransactionType.INCOME
-                R.id.chipExpense -> TransactionType.EXPENSE
-                else -> TransactionType.EXPENSE
-            }
-            updateCategorySpinner(type)
-        }
+        // Setup category spinner
+        val categories = listOf("Food", "Transport", "Shopping", "Entertainment", "Bills", "Other")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerCategory.adapter = adapter
 
         etDate.setOnClickListener {
             showDatePicker { date ->
@@ -162,137 +130,53 @@ class TransactionsFragment : Fragment() {
         }
 
         btnAddTransaction.setOnClickListener {
-            val amount = etAmount.text.toString().toDoubleOrNull()
-            val description = etDescription.text.toString()
-            val selectedChipId = chipGroup.checkedChipId
-            val selectedType = when (selectedChipId) {
-                R.id.chipIncome -> TransactionType.INCOME
-                R.id.chipExpense -> TransactionType.EXPENSE
-                else -> TransactionType.EXPENSE
+            try {
+                val amount = etAmount.text.toString().toDoubleOrNull()
+                val description = etDescription.text.toString()
+                val selectedChipId = chipGroup.checkedChipId
+
+                if (amount == null || amount <= 0) {
+                    etAmount.error = "Please enter a valid amount"
+                    return@setOnClickListener
+                }
+
+                if (description.isBlank()) {
+                    etDescription.error = "Please enter a description"
+                    return@setOnClickListener
+                }
+
+                if (selectedChipId == View.NO_ID) {
+                    Snackbar.make(binding.root, "Please select a transaction type", Snackbar.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                val transactionType = when (selectedChipId) {
+                    R.id.chipIncome -> TransactionType.INCOME
+                    R.id.chipExpense -> TransactionType.EXPENSE
+                    else -> TransactionType.EXPENSE
+                }
+
+                val transaction = Transaction(
+                    userId = (requireActivity() as MainActivity).getCurrentUserId(),
+                    categoryId = (spinnerCategory.selectedItemPosition + 1).toLong(),
+                    amount = amount,
+                    description = description,
+                    type = transactionType,
+                    date = selectedDate
+                )
+
+                viewModel.addTransaction(transaction)
+                dialog.dismiss()
+                
+                // Show success message
+                Snackbar.make(binding.root, "Transaction added successfully", Snackbar.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                // Show error message
+                Snackbar.make(binding.root, "Error adding transaction: ${e.message}", Snackbar.LENGTH_SHORT).show()
             }
-            val categories = TransactionCategories.getCategoriesByType(selectedType)
-            val selectedCategoryIndex = spinnerCategory.selectedItemPosition
-            val selectedCategory = if (selectedCategoryIndex in categories.indices) categories[selectedCategoryIndex] else null
-
-            if (amount == null || amount <= 0) {
-                etAmount.error = "Please enter a valid amount"
-                return@setOnClickListener
-            }
-
-            if (description.isBlank()) {
-                etDescription.error = "Please enter a description"
-                return@setOnClickListener
-            }
-
-            if (selectedChipId == View.NO_ID) {
-                Snackbar.make(binding.root, "Please select a transaction type", Snackbar.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            if (selectedCategory == null) {
-                Snackbar.make(binding.root, "Please select a category", Snackbar.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val transaction = Transaction(
-                userId = (requireActivity() as MainActivity).getCurrentUserId(),
-                categoryId = selectedCategory.id,
-                amount = amount,
-                description = description,
-                type = selectedType,
-                date = selectedDate
-            )
-
-            viewModel.addTransaction(transaction)
-            dialog.dismiss()
         }
 
         dialog.show()
-    }
-
-    private fun showAddEditTransactionDialog(transaction: Transaction) {
-        val dialog = BottomSheetDialog(requireContext())
-        val dialogView = layoutInflater.inflate(R.layout.bottom_sheet_add_transaction, null)
-        dialog.setContentView(dialogView)
-
-        val etAmount = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etAmount)
-        val etDescription = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDescription)
-        val etDate = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDate)
-        val chipGroup = dialogView.findViewById<com.google.android.material.chip.ChipGroup>(R.id.transactionTypeChipGroup)
-        val btnAddTransaction = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTransaction)
-
-        // Pre-fill the fields
-        etAmount.setText(transaction.amount.toString())
-        etDescription.setText(transaction.description)
-        selectedDate = transaction.date
-        etDate.setText(SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(selectedDate)))
-        
-        // Set the transaction type chip
-        chipGroup.check(
-            when (transaction.type) {
-                TransactionType.INCOME -> R.id.chipIncome
-                TransactionType.EXPENSE -> R.id.chipExpense
-            }
-        )
-
-        btnAddTransaction.text = "Update Transaction"
-
-        etDate.setOnClickListener {
-            showDatePicker { date ->
-                selectedDate = date
-                etDate.setText(SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(date)))
-            }
-        }
-
-        btnAddTransaction.setOnClickListener {
-            val amount = etAmount.text.toString().toDoubleOrNull()
-            val description = etDescription.text.toString()
-            val selectedChipId = chipGroup.checkedChipId
-
-            if (amount == null || amount <= 0) {
-                etAmount.error = "Please enter a valid amount"
-                return@setOnClickListener
-            }
-
-            if (description.isBlank()) {
-                etDescription.error = "Please enter a description"
-                return@setOnClickListener
-            }
-
-            if (selectedChipId == View.NO_ID) {
-                Snackbar.make(binding.root, "Please select a transaction type", Snackbar.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val transactionType = when (selectedChipId) {
-                R.id.chipIncome -> TransactionType.INCOME
-                R.id.chipExpense -> TransactionType.EXPENSE
-                else -> TransactionType.EXPENSE
-            }
-
-            val updatedTransaction = transaction.copy(
-                amount = amount,
-                description = description,
-                type = transactionType,
-                date = selectedDate
-            )
-
-            viewModel.updateTransaction(updatedTransaction)
-            dialog.dismiss()
-        }
-
-        dialog.show()
-    }
-
-    private fun showDeleteConfirmationDialog(transaction: Transaction) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.delete_transaction)
-            .setMessage(R.string.delete_confirmation)
-            .setPositiveButton(R.string.yes) { _, _ ->
-                viewModel.deleteTransaction(transaction)
-            }
-            .setNegativeButton(R.string.no, null)
-            .show()
     }
 
     private fun showDatePicker(onDateSelected: (Long) -> Unit) {
@@ -309,8 +193,24 @@ class TransactionsFragment : Fragment() {
         ).show()
     }
 
+    private fun showDeleteConfirmationDialog(transaction: Transaction) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.delete_transaction)
+            .setMessage(R.string.delete_confirmation)
+            .setPositiveButton(R.string.yes) { _, _ ->
+                viewModel.deleteTransaction(transaction)
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
+    }
+
+    private fun updateEmptyState(isEmpty: Boolean) {
+        binding.emptyStateLayout.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        binding.transactionsRecyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
-} 
+}
