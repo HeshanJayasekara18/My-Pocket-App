@@ -1,15 +1,50 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Local configuration file (SDK path, etc)
 local.properties
+
+# Log files
+*.log
+
+# Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-workspace
+*.sublime-project
+.DS_Store
+
+# Kotlin/Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Generated files
+gen/
+out/
+captures/
+
+# Keystore files
+*.jks
+*.keystore
+
+# Crashlytics/Firebase
+crashlytics-build.properties
+fabric.properties
+
+# Others
+*.apk
+*.ap_
+*.db
+*.lock
+
+# Mac OS
+.DS_Store
+
+# Windows
+Thumbs.db
