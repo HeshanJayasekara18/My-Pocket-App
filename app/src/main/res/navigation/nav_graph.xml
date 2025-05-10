@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.example.budgetapp.ui.dashboard.DashboardFragment"
+        android:label="Dashboard">
+        <action
+            android:id="@+id/action_dashboard_to_transactions"
+            app:destination="@id/transactionsFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_budget"
+            app:destination="@id/budgetFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/transactionsFragment"
+        android:name="com.example.budgetapp.ui.transactions.TransactionsFragment"
+        android:label="Transactions" />
+
+    <fragment
+        android:id="@+id/budgetFragment"
+        android:name="com.example.budgetapp.ui.budget.BudgetFragment"
+        android:label="Budget" />
+
+    <fragment
+        android:id="@+id/reportsFragment"
+        android:name="com.example.budgetapp.ui.reports.ReportsFragment"
+        android:label="Reports" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.budgetapp.ui.profile.ProfileFragment"
+        android:label="Profile" />
+</navigation> 

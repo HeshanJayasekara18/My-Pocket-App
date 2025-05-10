@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme Colors -->
+    <color name="primary">#2196F3</color>
+    <color name="primary_dark">#1976D2</color>
+    <color name="primary_light">#BBDEFB</color>
+    <color name="secondary">#FFC107</color>
+    <color name="secondary_dark">#FFA000</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="gray">#757575</color>
+    <color name="light_gray">#EEEEEE</color>
+    <color name="error">#B00020</color>
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+
+    <!-- Additional Colors -->
+    <color name="colorPrimary">@color/primary</color>
+    <color name="colorPrimaryDark">@color/primary_dark</color>
+    <color name="accent_beige">#F5F5DC</color>
+    <color name="icon_background">#F5F5F5</color>
+    <color name="background_offwhite">#F8F8F8</color>
+    <color name="primary_slate">#2C3E50</color>
+    <color name="primary_navy">#1A237E</color>
+
+    <!-- Transaction Colors -->
+    <color name="income_green">#4CAF50</color>
+    <color name="expense_red">#F44336</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+
+    <!-- Password Strength Color -->
+    <color name="password_strength_color">#FF4081</color>
+
+    <!-- New colors from the code block -->
+    <color name="accent">#FF4081</color>
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#757575</color>
+    <color name="icons">#FFFFFF</color>
+    <color name="divider">#BDBDBD</color>
+    <color name="warning_orange">#FFA000</color>
+    <color name="success_green">#4CAF50</color>
+    <color name="error_red">#F44336</color>
+    <color name="success_green_light">#E8F5E9</color>
+    <color name="error_red_light">#FFEBEE</color>
+</resources>
